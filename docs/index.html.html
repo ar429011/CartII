@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no" />
+
+<title>Food deserts in Ohio</title>
+<style>
+    html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: ;
+        font-family: "Times New Roman", Times, serif;
+    }
+    .container {
+        display: grid;
+        grid-template-columns: 20% 50% 25%; 
+        grid-template-rows: 100%;
+        height: 100%;
+        padding: 20px;
+        box-sizing: border-box;
+        gap: 25px; 
+    }
+    .view-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    #titleDiv, #titleDiv2, #titleDiv3, #titleDivLeft {
+        background-color: #800000;
+        color: white;
+        text-align: center;
+        padding: 10px 0;
+        font-size: 25px;
+        width: 100%;
+        margin-bottom: 10px; 
+    }
+    #viewDiv, #viewDiv2, #viewDiv3 {
+        height: 100%;
+    }
+    .view-stack {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    #viewDiv2, #viewDiv3 {
+        height: 48%; 
+    }
+     #legendDiv {
+        margin-left: 20px;
+        padding: 10px;
+        display:block;
+        flex-direction: column;
+        height: 100%;
+        overflow-y: auto;
+    }
+    #header {
+        width: 100%;
+        background-color: #C2B280;
+        height: 10%;
+        text-align: center;
+        color: white;
+        padding: 10px 0;
+    }
+ 
+</style>
+
+<link rel="stylesheet" href="https://js.arcgis.com/4.31/esri/themes/light/main.css" />
+    
+<script src="https://js.arcgis.com/4.31/"></script>
+    
+<script>
+    require([
+        "esri/Map",
+        "esri/views/MapView",
+        "esri/Basemap",
+        "esri/layers/VectorTileLayer",
+        "esri/layers/FeatureLayer",
+        "esri/layers/CSVLayer",
+        "esri/widgets/LayerList",
+        "esri/widgets/Legend",
+        "esri/symbols/SimpleFillSymbol",
+        "esri/renderers/SimpleRenderer"
+               
+    ], function(Map, MapView, Basemap, VectorTileLayer, FeatureLayer, CSVLayer, LayerList, Legend, SimpleFillSymbol, SimpleRenderer) {
+        
+        var myBasemap = new Basemap({
+            baseLayers: [
+                new VectorTileLayer({
+                    portalItem:{
+                        id:"882cf158510048f0b523300cfdcc55cd"
+                    }
+                })
+            ]
+        });
+        
+        
+        var map = new Map({
+                basemap: myBasemap
+        });
+        
+        var view = new MapView({
+            container: "viewDiv",
+            map: map,
+            zoom: 6,
+            center: [-82.9071, 40.4173],
+            constraints: {
+                rotationEnabled: false
+            }
+        });   
+        
+        var foodDeserts = new FeatureLayer ({
+           portalItem:{
+            id:"d89f853d89d548288b6fe429d495144c"    
+                }
+        });
+            map.add(foodDeserts);
+        
+        
+        var template = {
+                title: "Food Retailer Info",
+                content: "{Store_Name} at {Store_Street_Address}."
+            };
+        
+        var snapRetailers = new CSVLayer({
+            url:"https://dl.dropboxusercontent.com/scl/fi/rzido3jwxjwi8atbf2pdq/SNAP_Retailer_Location_data.csv?rlkey=swg8ve8mj103ufqsqqmerfved&st=yoy8tjdv&dl=0",
+            copyright: "USDA SNAP Retailers",
+            popupTemplate: template
+        });
+        
+        snapRetailers.renderer = {
+            type: "simple",
+            symbol: {
+                type: "simple-marker",
+                color: "#8A9A5B",
+                size: 5,
+                outline:{
+                    width: 0.5,
+                    color: "white"
+                }
+            }
+        };
+        
+            map.add(snapRetailers);
+        
+      
+        var map2 = new Map({
+            basemap: myBasemap  
+        });
+
+        var view2 = new MapView({
+            map: map2,
+            container: "viewDiv2",
+            center: [-82.9071, 40.4173],  
+            zoom: 5 
+            });
+       
+        var counties = new FeatureLayer ({
+           portalItem:{
+            id:"bf40a5c272ad41fb9bddad2b19752cb6"    
+                }
+        });
+        
+            map2.add(counties);
+        
+        
+        var map3 = new Map({
+                    basemap: myBasemap
+        });
+
+        var view3 = new MapView({
+            container: "viewDiv3",
+            map: map3,
+            zoom: 5,
+            center: [-82.9071, 40.4173],
+            constraints: {
+                rotationEnabled: false
+            }
+        });   
+        
+        
+        var education = new FeatureLayer ({
+               portalItem:{
+                id:"201f1c96584f4f3fa241003cd7d17522"    
+                    }
+
+        });
+            map3.add(education);
+        
+        
+        
+        const views = [view, view2, view3];
+        let active;
+        
+        const sync = (source) => {
+            if (!active || !active.viewpoint || active !== source) {
+                    return;
+            }
+            
+        for (const view of views) {
+            if (view !== active) {
+                    view.viewpoint = active.viewpoint;
+                }
+            }
+        };
+        
+        for (const view of views) {
+            view.watch(["interacting", "animation"], () => {
+                active = view;
+                    sync(active);
+        });
+            view.watch("viewpoint", () => sync(view));
+        };
+  
+        
+        const layerList = new LayerList({
+            view: view,
+             container: "legendDiv",
+
+            listItemCreatedFunction: function(event){
+                const item = event.item;
+                if (item.layer.type !="group"){
+                    item.panel = {
+                        content: "legend",
+                        open: true
+                    };
+                }
+            }
+        });
+
+        const layerList2 = new LayerList({
+            view: view2,
+             container: "legendDiv",
+
+            listItemCreatedFunction: function(event){
+                const item = event.item;
+                if (item.layer.type !="group"){
+                    item.panel = {
+                        content: "legend",
+                        open: true
+                    };
+                }
+            }
+        });
+
+        const layerList3 = new LayerList({
+            view: view3,
+             container: "legendDiv",
+
+            listItemCreatedFunction: function(event){
+                const item = event.item;
+                if (item.layer.type !="group"){
+                    item.panel = {
+                        content: "legend",
+                        open: true
+                    };
+                }
+            }
+        });        
+
+});
+</script>
+</head>   
+<body>
+    <div id="header">
+        <h1>Income, Education and Proximity to Food Deserts in Ohio</h1>
+            </div>   
+    
+        <div class="container">
+            <div id="legendDiv">Legend:</div>
+        
+        <div class="view-container">
+            <div id="titleDivLeft">Food Deserts</div>  
+            <div id="viewDiv"></div>  
+        </div>
+        <div class="view-stack">
+            <div id="titleDiv2">Poverty Rate</div>
+            <div id="viewDiv2"></div> <br>
+            <div id="titleDiv3">College Education</div>
+            <div id="viewDiv3"></div> 
+        </div>
+    </div>
+</body>
+    
+</html>
+
+    
+    
